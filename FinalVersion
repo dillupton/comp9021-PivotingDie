@@ -1,0 +1,485 @@
+# i know this solution may be confusing but i will attempt to decribe my logic 
+# firstly i try to determine where abouts the goal cell is relative to the diagram given
+# i do this through firstly testing if on the corners
+# if not then i find the upper and lower bound numbers which alternate between the top right and bottom left corners 
+# i then find the mid point between these bound and see if the goal cell is in any of these ranges for a given ring number
+# a ring number is just how many times from the middle that the goalcell has reached the top right corner
+# once i have found the position, i then introduce the mapping element of my solution, which i found patterns in the numbers shown for each side of the die
+# using these patterns i was effectively able to find at least 2 sides of the die given these multiple patterns and thus using the map function was able to find the number 
+# on the missing side 
+
+
+import sys
+
+# Insert your code here
+
+goalCell = 0
+
+#error checking the input of goal cell 
+while True:
+    try:
+        goalCell = int(input("Enter the desired goal cell number: "))
+        if goalCell > 0:
+            break
+        else:
+            print("Incorrect value, try again")
+    except ValueError:
+        print("Incorrect value, try again")
+#dict to store the roatational order of numbers 
+# for instance the rhs die number on the right column is the columns on the rhs of the picture as they have a set order 
+rhsDie = {
+    "rightCorner": {
+        1: 3,
+        2: 2,
+        3: 1
+    },
+    "leftCorner": {
+        1: 4,
+        2: 2,
+        3: 6, 
+        4: 3,
+        5: 5,
+        6: 1
+    },
+    "rightColumn": {
+         0: "1",                     #ring: number on die
+         1: "3",
+         2: "2"                           
+    },
+    "leftColumn": {
+         0: "1",                     #ring: number on die
+         1: "4",
+         2: "2", 
+         3: "6",                     #ring: number on die
+         4: "3",
+         5: "5"                         
+    },
+    "topColumn": {
+        0: {
+            0: 3,
+            1: 1,
+            2: 4,
+            3: 6
+        },
+        1: {
+            0: 2,
+            1: 4,
+            2: 5,
+            3: 4
+        },
+        2: {
+            0: 1,
+            1: 2,
+            2: 6,
+            3: 5
+        }
+    }
+
+
+}
+topDie = {
+    "rightCorner": {
+        1: 6,
+        2: 4,
+        3: 5
+    },
+    "leftCorner": {
+        1: 2,
+        2: 1,
+        3: 3,
+        4: 2,
+        5: 1,
+        6: 3
+    },
+    "topColumn": {
+        0: {
+            0: 6,
+            1: 3,
+            2: 1,
+            3: 4
+        },
+        1: {
+            0: 4,
+            1: 2,
+            2: 3,
+            3: 5
+        },
+        2: {
+            0: 5,
+            1: 1,
+            2: 2,
+            3: 6
+        }
+    }, 
+    "rightColumn": {
+        0: {
+            0: 6,
+            1: 5,
+            2: 1,
+            3: 2
+        },
+        1: {
+            0: 4,
+            1: 6,
+            2: 3,
+            3: 1
+        },
+        2: {
+            0: 5,
+            1: 4,
+            2: 2,
+            3: 3
+        }
+    },
+    "bottomColumn": {
+        0: {
+            0: 3,
+            1: 1,
+            2: 4,
+            3: 6
+        },
+        1: {
+            0: 5,
+            1: 3,
+            2: 2,
+            3: 4
+        },
+        2: {
+            0: 1,
+            1: 2,
+            2: 6,
+            3: 5
+        },
+        3: {
+            0: 4,
+            1: 1,
+            2: 3,
+            3: 6
+        },
+        4: {
+            0: 2,
+            1: 3,
+            2: 5,
+            3: 4
+        },
+        5: {
+            0: 6,
+            1: 2,
+            2: 1,
+            3: 5
+        }
+    }, 
+    "leftColumn": {
+        0: {
+            0: 3,
+            1: 2,
+            2: 4,
+            3: 5
+        },
+        1: {
+            0: 2,
+            1: 6,
+            2: 5,
+            3: 1
+        },
+        2: {
+            0: 1,
+            1: 3,
+            2: 6,
+            3: 4
+        },
+        3: {
+            0: 3,
+            1: 5,
+            2: 4,
+            3: 2
+        },
+        4: {
+            0: 2,
+            1: 1,
+            2: 5,
+            3: 6
+        },
+        5: {
+            0: 1,
+            1: 4,
+            2: 6,
+            3: 3
+        }
+    }
+}
+
+frontDie = {
+    "rightCorner": {
+        1: 2,
+        2: 1,
+        3: 3
+    },
+    "leftCorner": {
+        1: 6,
+        2: 3,
+        3: 5,
+        4: 1,
+        5: 4,
+        6: 2
+    },
+    "topColumn": {
+         0: "2",                     
+         1: "1",
+         2: "3"                          
+    },
+    "bottomColumn": {
+         0: "2",                     
+         1: "6",
+         2: "3",  
+         3: "5",                     
+         4: "1",
+         5: "4"                        
+    }
+}
+
+map = {                     #first value known to find the missing side 
+    1: {
+        0: "2",
+        1: "4",
+        2: "5",
+        3: "3"
+    },
+    2: {
+        0: "1",
+        1: "3",
+        2: "6",
+        3: "4"
+    },
+    3: {
+        0: "1",
+        1: "5",
+        2: "6",
+        3: "2"
+    },
+    4: {
+        0: "1",
+        1: "2",
+        2: "6",
+        3: "5"
+    },
+    5: {
+        0: "1",
+        1: "4",
+        2: "6",
+        3: "3"
+    },
+    6: {
+        0: "2",
+        1: "3",
+        2: "5",
+        3: "4"
+    }
+}
+
+topRight = [2]
+bottomLeft = [5]
+
+top = 0
+right = 0
+front = 0
+
+gap = 1 
+rings = 1
+indexR = 0
+indexL = 0
+eightL = 12
+eightR = 8
+cornerBetween = 0
+
+lowerBound = topRight[indexR]
+upperBound = bottomLeft[indexL]
+
+found = False
+
+if goalCell == 1:
+    print("On cell " + str(goalCell) + ", " + str(3) + " is at the top, " + str(2) + " at the front, and " + str(1) + " on the right.")
+    sys.exit()
+    #loop till goal cell found
+while found != True:
+    left = False
+    #first test the corners
+    if goalCell == topRight[indexR]:
+        #print("top right corner")
+        cornerBetween = goalCell
+        found = True
+    elif goalCell == bottomLeft[indexL]:
+        #print("bottom left corner")
+        cornerBetween = goalCell
+        left = True
+        found = True
+    elif lowerBound < goalCell < upperBound:
+        found = True
+        if lowerBound == bottomLeft[indexL]:          # top left corner
+            cornerBetween = upperBound - gap - 2
+            left = True
+        else:                                           # bottom right corner
+            cornerBetween = upperBound - gap - 1  
+
+        #print("gap = " + str(gap))
+        #print("corner = " + str(cornerBetween))
+    elif goalCell > upperBound and lowerBound == topRight[indexR]:
+        topRight.append(topRight[indexR] + eightR)
+        indexR += 1
+        eightR += 8
+        lowerBound =  upperBound
+        upperBound = topRight[indexR]
+        
+        if goalCell >= topRight[rings]:
+            rings +=1
+            gap += 2
+    elif goalCell > upperBound and lowerBound == bottomLeft[indexL]:
+        bottomLeft.append(bottomLeft[indexL] + eightL)
+        indexL += 1
+        eightL += 8
+        lowerBound =  upperBound
+        upperBound = bottomLeft[indexL]
+#meaning goal cell is on rhs of diagram
+if left == False:
+    if goalCell == cornerBetween:
+        counter = 0
+        ringCount = 0
+        while counter < rings:
+            if ringCount > 2:
+                ringCount = 1
+            else:
+                ringCount += 1
+            counter += 1  
+        print("On cell " + str(goalCell) + ", " + str(topDie["rightCorner"][ringCount]) + " is at the top, " + str(frontDie["rightCorner"][ringCount]) + " at the front, and " + str(rhsDie["rightCorner"][ringCount]) + " on the right.")
+        #print(ringCount)
+
+        sys.exit()
+    elif goalCell < cornerBetween:                # right column
+        # for rightside of die right column
+        counter = 0
+        ringCount = 0
+        while counter < rings:
+            if ringCount > 1:
+                ringCount = 0
+            else:
+                ringCount += 1
+            counter += 1   
+        right = rhsDie["rightColumn"][ringCount]
+        #rightcolumn top die number 
+        
+        numAlongSequence = goalCell - lowerBound
+        seqCount = 0
+        i = 0
+        while i < numAlongSequence:
+            if seqCount > 2:
+                seqCount = -1
+            seqCount += 1
+            i+=1
+        if ringCount == 0:
+            ringCount = 2
+        else:
+            ringCount -=1
+        top = topDie["rightColumn"][ringCount][seqCount]
+
+
+    elif goalCell > cornerBetween:                      # bottom column
+        counter = 0
+        ringCount = 0
+        while counter < rings:
+            if ringCount > 4:
+                ringCount = -1
+            ringCount += 1
+            counter += 1 
+        front = frontDie["bottomColumn"][ringCount]
+
+        numAlongSequence = goalCell - cornerBetween
+        seqCount = 0
+        i = 0
+        while i < numAlongSequence:
+            if seqCount > 2:
+                seqCount = -1
+            seqCount += 1
+            i+=1
+        top = topDie["bottomColumn"][ringCount][seqCount]
+else:
+    if goalCell == cornerBetween:
+        counter = 0
+        ringCount = 0
+        #print(rings)
+        while counter < rings:
+            if ringCount > 5:
+                ringCount = 1
+            else:
+                ringCount += 1
+            counter += 1  
+        print("On cell " + str(goalCell) + ", " + str(topDie["leftCorner"][ringCount]) + " is at the top, " + str(frontDie["leftCorner"][ringCount]) + " at the front, and " + str(rhsDie["leftCorner"][ringCount]) + " on the right.")
+
+        sys.exit()
+    elif goalCell <= cornerBetween:                # left column
+        # for right side of table columns
+        counter = 0
+        ringCount = 0
+        while counter < rings:
+            if ringCount > 4:
+                ringCount = -1
+            ringCount += 1
+            counter += 1 
+        right = rhsDie["leftColumn"][ringCount]
+        numAlongSequence = goalCell - lowerBound
+        seqCount = 0
+        i = 0
+        while i < numAlongSequence:
+            if seqCount > 2:
+                seqCount = -1
+            seqCount += 1
+            i+=1
+        top = topDie["leftColumn"][ringCount][seqCount]
+
+
+    elif goalCell > cornerBetween:                  #  top column
+        counter = 0
+        ringCount = 0
+        while counter < rings:
+            if ringCount > 1:
+                ringCount = -1
+            ringCount += 1
+            counter += 1
+        numAlongSequence = upperBound - goalCell
+        
+        seqCount = 0
+        i = 0
+        while i < numAlongSequence:
+            if seqCount > 2:
+                seqCount = -1
+            seqCount += 1
+            i+=1
+        top = topDie["topColumn"][ringCount][seqCount]
+        right = rhsDie["topColumn"][ringCount][seqCount]
+        # has to be row 
+
+if front == 0:
+    i = 0 
+    while i < 4:
+        if int(map[top][i]) == int(right):
+            if i == 0:
+                i = 4
+            front = map[top][i-1]
+            break
+        i +=1
+        
+elif right == 0:                #done
+    i = 0
+    while i < 4:
+        if int(map[top][i]) == int(front):
+            if i == 3:
+                i = 1
+            right = map[top][i+1]
+            break
+        i +=1
+
+print("On cell " + str(goalCell) + ", " + str(top) + " is at the top, " + str(front) + " at the front, and " + str(right) + " on the right.")
+
+
+
+
+
